@@ -3,9 +3,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// public 폴더 안의 정적 파일들을 제공
-app.use(express.static(path.join(__dirname, 'public')));
+// 현재 폴더의 파일들을 웹에 서빙
+app.use(express.static(path.join(__dirname)));
 
 app.listen(PORT, () => {
-  console.log(`서버가 실행 중입니다: http://localhost:${PORT}`);
+  console.log(`서버 실행 성공: http://localhost:${PORT}`);
 });
