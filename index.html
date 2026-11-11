@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>캠퍼스 라이프 어시스턴트 (Campus Life Assistant)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden">
+
+  <!-- 사이드바 -->
+  <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between hidden md:flex shrink-0">
+    <div>
+      <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+        <i class="fa-solid fa-graduation-cap text-indigo-400 text-2xl"></i>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">Campus Life</h1>
+          <p class="text-xs text-slate-400">Assistant</p>
+        </div>
+      </div>
+      <nav class="mt-6 px-4 space-y-1">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-indigo-400 bg-slate-800">
+          <i class="fa-solid fa-house w-5"></i> 메인 대시보드
+        </button>
+        <button onclick="switchTab('timetable')" id="nav-timetable" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-calendar-days w-5"></i> 시간표 관리
+        </button>
+        <button onclick="switchTab('tasks')" id="nav-tasks" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-list-check w-5"></i> 과제 관리 (D-Day)
+        </button>
+        <button onclick="switchTab('academic')" id="nav-academic" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-calendar-plus w-5"></i> 학사 일정
+        </button>
+        <button onclick="switchTab('clubs')" id="nav-clubs" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-users w-5"></i> 동아리 정보
+        </button>
+        <button onclick="switchTab('notes')" id="nav-notes" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-book-open w-5"></i> 강의노트 / 메모
+        </button>
+        <button onclick="switchTab('notices')" id="nav-notices" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800">
+          <i class="fa-solid fa-bullhorn w-5"></i> 학교 공지사항
+        </button>
+      </nav>
+    </div>
+    
+    <div class="p-4 border-t border-slate-800">
+      <div class="bg-slate-800/60 p-3 rounded-lg text-xs">
+        <p class="font-medium text-slate-300 mb-2">데이터 백업 / 복원</p>
+        <div class="flex gap-2">
+          <button onclick="exportData()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 rounded transition text-center">
+            내보내기
+          </button>
+          <label class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-1.5 rounded transition text-center cursor-pointer">
+            가져오기
+            <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden" />
+          </label>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
+    
+    <!-- 모바일 헤더 -->
+    <div class="md:hidden flex justify-between items-center mb-6 bg-slate-900 text-white p-4 rounded-xl">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-graduation-cap text-indigo-400 text-xl"></i>
+        <span class="font-bold">Campus Life Assistant</span>
+      </div>
+      <select onchange="switchTab(this.value)" class="bg-slate-800 text-xs px-2 py-1 rounded text-white border border-slate-700">
+        <option value="dashboard">대시보드</option>
+        <option value="timetable">시간표</option>
+        <option value="tasks">과제 관리</option>
+        <option value="academic">학사 일정</option>
+        <option value="clubs">동아리</option>
+        <option value="notes">강의노트</option>
+        <option value="notices">공지사항</option>
+      </select>
+    </div>
+
+    <!-- 1. 대시보드 Tab -->
+    <section id="tab-dashboard" class="tab-content space-y-6">
+      <header class="flex justify-between items-end">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">대시보드</h2>
+          <p class="text-sm text-slate-500">오늘의 학사 일정과 수업, 과제 마감 현황입니다.</p>
+        </div>
+        <span class="text-xs bg-indigo-100 text-indigo-700 font-medium px-3 py-1 rounded-full" id="current-date-badge">오늘</span>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 오늘 수업 카드 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-clock text-indigo-500"></i> 오늘 수업
+            </h3>
+            <span class="text-xs text-slate-400" id="today-day-name">--요일</span>
+          </div>
+          <div id="dashboard-today-classes" class="space-y-3">
+            <p class="text-xs text-slate-400 py-4 text-center">오늘 예정된 수업이 없습니다.</p>
+          </div>
+        </div>
+
+        <!-- 임박한 과제 카드 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-fire text-amber-500"></i> 마감 임박 과제
+            </h3>
+            <button onclick="switchTab('tasks')" class="text-xs text-indigo-600 hover:underline">전체보기</button>
+          </div>
+          <div id="dashboard-urgent-tasks" class="space-y-3">
+            <p class="text-xs text-slate-400 py-4 text-center">마감 임박 과제가 없습니다.</p>
+          </div>
+        </div>
+
+        <!-- 최신 학사일정 카드 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-calendar text-emerald-500"></i> 다가오는 학사일정
+            </h3>
+            <button onclick="switchTab('academic')" class="text-xs text-indigo-600 hover:underline">전체보기</button>
+          </div>
+          <div id="dashboard-academic-events" class="space-y-3">
+            <p class="text-xs text-slate-400 py-4 text-center">등록된 학사일정이 없습니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 시간표 Tab -->
+    <section id="tab-timetable" class="tab-content hidden space-y-6">
+      <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">시간표 관리</h2>
+          <p class="text-sm text-slate-500">강의 정보를 등록하고 시간표 겹침 여부를 확인하세요.</p>
+        </div>
+        <button onclick="toggleModal('class-modal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 수업 추가
+        </button>
+      </header>
+
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div class="min-w-[600px]">
+          <div class="grid grid-cols-6 gap-2 text-center font-semibold text-xs text-slate-500 pb-2 border-b">
+            <div>교시 / 시간</div>
+            <div>월</div>
+            <div>화</div>
+            <div>수</div>
+            <div>목</div>
+            <div>금</div>
+          </div>
+          <div id="timetable-grid" class="divide-y divide-slate-100">
+            <!-- JS로 시간표 그리드 생성 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 과제 관리 Tab -->
+    <section id="tab-tasks" class="tab-content hidden space-y-6">
+      <header class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">과제 관리 (D-Day)</h2>
+          <p class="text-sm text-slate-500">과제를 등록하고 제출 마감일을 관리하세요.</p>
+        </div>
+        <button onclick="toggleModal('task-modal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 과제 등록
+        </button>
+      </header>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b bg-slate-50 flex justify-between items-center text-xs font-semibold text-slate-500">
+          <span>과제 목록</span>
+          <span id="task-count">총 0개</span>
+        </div>
+        <div id="task-list" class="divide-y divide-slate-100">
+          <p class="text-xs text-slate-400 py-8 text-center">등록된 과제가 없습니다.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 학사 일정 Tab -->
+    <section id="tab-academic" class="tab-content hidden space-y-6">
+      <header class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">학사 일정</h2>
+          <p class="text-sm text-slate-500">시험, 축제, 휴강 등 주요 학사 일정을 기록하세요.</p>
+        </div>
+        <button onclick="toggleModal('academic-modal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 일정 추가
+        </button>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="academic-list">
+        <p class="text-xs text-slate-400 py-8 text-center col-span-2">등록된 학사 일정이 없습니다.</p>
+      </div>
+    </section>
+
+    <!-- 5. 동아리 정보 Tab -->
+    <section id="tab-clubs" class="tab-content hidden space-y-6">
+      <header class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">동아리 정보</h2>
+          <p class="text-sm text-slate-500">동아리 소개 및 모임 일정을 확인하세요.</p>
+        </div>
+        <button onclick="toggleModal('club-modal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 동아리 등록
+        </button>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="club-list">
+        <p class="text-xs text-slate-400 py-8 text-center col-span-3">등록된 동아리 정보가 없습니다.</p>
+      </div>
+    </section>
+
+    <!-- 6. 강의노트/메모 Tab -->
+    <section id="tab-notes" class="tab-content hidden space-y-6">
+      <header class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">강의노트 & 메모장</h2>
+          <p class="text-sm text-slate-500">수업 요약 노트나 개인 메모를 간편하게 저장하세요.</p>
+        </div>
+        <button onclick="toggleModal('note-modal', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
+          <i class="fa-solid fa-plus"></i> 노트 작성
+        </button>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="note-list">
+        <p class="text-xs text-slate-400 py-8 text-center col-span-3">작성된 강의노트가 없습니다.</p>
+      </div>
+    </section>
+
+    <!-- 7. 공지사항 (API 연동 틀) Tab -->
+    <section id="tab-notices" class="tab-content hidden space-y-6">
+      <header class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">학교 공지사항</h2>
+          <p class="text-sm text-slate-500">학과 및 대학 공지사항 (API 연동 연동 프레임)</p>
+        </div>
+        <button onclick="loadNoticesApi()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 transition">
+          <i class="fa-solid fa-rotate-right"></i> 새로고침
+        </button>
+      </header>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>API 연동 준비 상태입니다. 현재는 테스트용 샘플 데이터가 출력됩니다.</span>
+        </div>
+        <div id="notice-list" class="divide-y divide-slate-100">
+          <!-- JS에서 API 호출 틀 및 샘플데이터 뿌림 -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 모달 창들 -->
+  <!-- 수업 추가 모달 -->
+  <div id="class-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">수업 추가</h3>
+      <form id="class-form" onsubmit="addClass(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">과목명</label>
+          <input type="text" id="class-title" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 자바스크립트 프로그래밍" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">강의실/교수님</label>
+          <input type="text" id="class-location" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 302호 / 김교수" />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">요일</label>
+            <select id="class-day" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500">
+              <option value="1">월요일</option>
+              <option value="2">화요일</option>
+              <option value="3">수요일</option>
+              <option value="4">목요일</option>
+              <option value="5">금요일</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">시작 교시</label>
+            <select id="class-start" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500">
+              <option value="1">1교시 (09:00)</option>
+              <option value="2">2교시 (10:00)</option>
+              <option value="3">3교시 (11:00)</option>
+              <option value="4">4교시 (12:00)</option>
+              <option value="5">5교시 (13:00)</option>
+              <option value="6">6교시 (14:00)</option>
+              <option value="7">7교시 (15:00)</option>
+              <option value="8">8교시 (16:00)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">종료 교시</label>
+            <select id="class-end" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500">
+              <option value="1">1교시 (09:50)</option>
+              <option value="2">2교시 (10:50)</option>
+              <option value="3">3교시 (11:50)</option>
+              <option value="4">4교시 (12:50)</option>
+              <option value="5">5교시 (13:50)</option>
+              <option value="6">6교시 (14:50)</option>
+              <option value="7">7교시 (15:50)</option>
+              <option value="8">8교시 (16:50)</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="toggleModal('class-modal', false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 과제 추가 모달 -->
+  <div id="task-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">과제 등록</h3>
+      <form id="task-form" onsubmit="addTask(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">과제명</label>
+          <input type="text" id="task-title" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 팀 프로젝트 킥오프 발표자료" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">관련 과목</label>
+          <input type="text" id="task-subject" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 오픈소스 실습" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">마감일</label>
+          <input type="date" id="task-date" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" />
+        </div>
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="toggleModal('task-modal', false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 학사 일정 모달 -->
+  <div id="academic-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">학사 일정 등록</h3>
+      <form id="academic-form" onsubmit="addAcademicEvent(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">일정 제목</label>
+          <input type="text" id="academic-title" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 중간고사 기간" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">날짜</label>
+          <input type="date" id="academic-date" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">구분</label>
+          <select id="academic-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500">
+            <option value="시험">시험</option>
+            <option value="축제">축제/행사</option>
+            <option value="휴강">휴강/보강</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="toggleModal('academic-modal', false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 동아리 추가 모달 -->
+  <div id="club-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">동아리 등록</h3>
+      <form id="club-form" onsubmit="addClub(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">동아리명</label>
+          <input type="text" id="club-name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 알골(Algorithm)" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">소개</label>
+          <textarea id="club-desc" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500 h-20" placeholder="동아리 활동 소개 및 목적"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">정기 모임 일정</label>
+          <input type="text" id="club-schedule" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 매주 목요일 18:00" />
+        </div>
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="toggleModal('club-modal', false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">등록</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 노트 추가 모달 -->
+  <div id="note-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">강의노트 및 메모 작성</h3>
+      <form id="note-form" onsubmit="addNote(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">제목</label>
+          <input type="text" id="note-title" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500" placeholder="예: 자바스크립트 변수 및 Scope 정리" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">내용</label>
+          <textarea id="note-content" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-indigo-500 h-40" placeholder="수업 요약 내용이나 아이디어를 기록하세요."></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-4">
+          <button type="button" onclick="toggleModal('note-modal', false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm">취소</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
